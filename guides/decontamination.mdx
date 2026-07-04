@@ -1,7 +1,7 @@
 ---
 title: "Decontamination: Removing Non-L0 Residue Before Persistence"
 sidebarTitle: "Decontamination"
-description: "Canon Boundary Guard defines four categories of residue — conversation, agent-control, version ghosts, and model-prior claims — that must be flagged before any material is written to project files."
+description: "Scan planned output for conversation residue, agent-control residue, version ghosts, and model-prior claims before writing any content to project files."
 ---
 
 Before persisting any content to project files, Canon Boundary Guard requires scanning the planned output for four types of residue. Each category represents material that originated outside project evidence — from the current conversation, from agent-steering instructions, from version references with no grounding in the project, or from generic model assumptions. If any of these patterns appear in content targeted for persistence, they must be flagged and resolved before writing. Silently including them contaminates project files with non-L0 material.

@@ -1,7 +1,7 @@
 ---
-title: "hooks.json — PreToolUse Hook Configuration"
+title: "hooks.json — Canon Boundary Guard PreToolUse Hook Config"
 sidebarTitle: "hooks.json"
-description: "The hooks.json file wires the inject_frame.py script to the Codex PreToolUse lifecycle event for write tools, re-injecting the compact provenance frame before apply_patch, Write, and Edit."
+description: "hooks.json wires inject_frame.py to the Codex PreToolUse event, re-surfacing the provenance frame before apply_patch, Write, and Edit tool calls."
 ---
 
 `hooks.json` is the hook wiring manifest for the Canon Boundary Guard plugin. It configures a `PreToolUse` hook that triggers the `inject_frame.py` script whenever Codex is about to call a matched write tool. The hook does not block or modify the tool call — it re-surfaces the compact provenance classification frame in the model's instruction stream at the moment a write operation is about to happen, so the frame remains active not just at session start but also at the point where persistent changes are made.
@@ -111,7 +111,7 @@ The hook's job is to put the compact classification frame back into the model's 
   <Card title="inject_frame.py" icon="code" href="/reference/inject-frame-script">
     The script executed by this hook — reads frame.md and emits the JSON payload.
   </Card>
-  <Card title="frame.md" icon="frame" href="/reference/frame-md">
+  <Card title="frame.md" icon="file-lines" href="/reference/frame-md">
     The compact classification frame that the hook injects before write tools.
   </Card>
   <Card title="Plugin Structure" icon="folder-tree" href="/reference/plugin-structure">

@@ -1,7 +1,7 @@
 ---
 title: "frame.md — Compact Provenance Classification Frame"
 sidebarTitle: "frame.md"
-description: "frame.md is the compact version of the Canon Boundary Guard classification frame, injected by the hook before write tools as a concise reminder of the six provenance layers and their persistence rules."
+description: "The compact classification frame injected before write tools: six layer definitions, the AGENTS.md prelude rule, and inline tagging and persistence rules."
 ---
 
 `frame.md` is the compact version of the Canon Boundary Guard classification frame. While `SKILL.md` is the full session-level document read at activation, `frame.md` is a short reference injected by the `inject_frame.py` hook at write moments — specifically before `apply_patch`, `Write`, and `Edit` tool calls. It serves as a quick reminder of the provenance layer definitions and the key rules about what may and may not be persisted, so those rules remain visible at the exact moment a persistent change is about to be made.

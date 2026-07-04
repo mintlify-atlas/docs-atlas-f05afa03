@@ -1,7 +1,7 @@
 ---
-title: "inject_frame.py — Hook Payload Script"
+title: "inject_frame.py — Canon Boundary Guard Hook Payload Script"
 sidebarTitle: "inject_frame.py"
-description: "inject_frame.py reads the compact frame.md and emits a JSON payload for the Codex PreToolUse hook, surfacing the provenance classification frame before every matched write tool."
+description: "inject_frame.py reads frame.md and emits a JSON hook payload for Codex PreToolUse, surfacing the provenance frame before each matched write tool call."
 ---
 
 `inject_frame.py` is intentionally small. It reads `references/frame.md`, strips surrounding whitespace, and emits a JSON hook payload on stdout. Codex invokes it as an external subprocess through the `PreToolUse` hook configured in `hooks.json` — once before each matched write tool call (`apply_patch`, `Write`, or `Edit`). The script does not modify files, does not communicate with any external service, and does not block the tool call. Its sole purpose is to put the compact provenance classification frame back into the model's instruction stream at the moment a write operation is about to happen.
@@ -108,7 +108,7 @@ canon-boundary-guard/          ← skill_dir (parents[1])
   <Card title="hooks.json" icon="webhook" href="/reference/hooks-json">
     The hook wiring manifest that invokes this script before matched write tools.
   </Card>
-  <Card title="frame.md" icon="frame" href="/reference/frame-md">
+  <Card title="frame.md" icon="file-lines" href="/reference/frame-md">
     The compact classification frame that this script reads and emits.
   </Card>
   <Card title="Plugin Structure" icon="folder-tree" href="/reference/plugin-structure">

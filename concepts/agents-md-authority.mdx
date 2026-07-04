@@ -1,7 +1,7 @@
 ---
-title: "AGENTS.md Authority and the L2A Prelude"
+title: "How Canon Boundary Guard Handles the AGENTS.md L2A Prelude"
 sidebarTitle: "AGENTS.md Authority"
-description: "Canon Boundary Guard detects AGENTS.md instruction-chain preludes by header shape and classifies them as L2A regardless of their displayed conversational role."
+description: "A leading message starting with AGENTS.md instructions for <path> is classified as L2A instruction-chain material, not operator chat or project content."
 ---
 
 In editor-integrated Codex sessions, `AGENTS.md` instructions may appear at the very start of the conversation as a visible user-role message — before the operator has sent a single real request. Because the message occupies the user turn, it can look like ordinary operator chat or, worse, like a project file being quoted back. If that misclassification sticks, Codex may treat behavioral instructions as project evidence or count the prelude as the operator's first request, corrupting both the authority model and the turn-sequencing logic.

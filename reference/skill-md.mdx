@@ -1,7 +1,7 @@
 ---
-title: "SKILL.md — Full Session Operating Frame"
+title: "SKILL.md — Canon Boundary Guard Session Operating Frame"
 sidebarTitle: "SKILL.md"
-description: "SKILL.md is the complete Canon Boundary Guard operating frame. Codex reads it in full on activation and uses it as the session-level guide for provenance classification, tagging, dossiers, and decontamination."
+description: "SKILL.md defines the full Canon Boundary Guard operating frame: provenance layers, inline tagging, dossier modes, decontamination patterns, and hook setup."
 ---
 
 `SKILL.md` is the authoritative document for the `canon-boundary-guard` skill. When the skill is invoked, Codex reads the entire file before responding or using any tools. It defines the full operating posture for the session: all six provenance layer definitions with their exact authority rules, inline tagging conventions, dossier modes for different edit types, decontamination patterns to flag before persisting, and hook setup guidance. The compact `frame.md` injected by the hook at write moments is a reinforcement layer that draws on this document — it does not replace it. The full `SKILL.md` frame must be active from session start.
@@ -168,7 +168,7 @@ The hook emits the frame as `hookSpecificOutput.additionalContext` before matche
 ## Related Pages
 
 <CardGroup cols={2}>
-  <Card title="frame.md" icon="frame" href="/reference/frame-md">
+  <Card title="frame.md" icon="file-lines" href="/reference/frame-md">
     The compact provenance frame that reinforces SKILL.md at write moments.
   </Card>
   <Card title="hooks.json" icon="webhook" href="/reference/hooks-json">

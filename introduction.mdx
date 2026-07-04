@@ -1,7 +1,7 @@
 ---
-title: "Canon Boundary Guard: Provenance Safety for Codex"
+title: "Canon Boundary Guard: Codex Provenance Safety Plugin"
 sidebarTitle: "Introduction"
-description: "Canon Boundary Guard is a Codex plugin that separates project evidence, chat context, operator instructions, and model assumptions into distinct cognitive layers."
+description: "Canon Boundary Guard separates project evidence, chat context, operator instructions, and model assumptions into distinct cognitive layers in Codex."
 ---
 
 Canon Boundary Guard is a Codex plugin that packages a provenance-boundary skill and an optional lifecycle hook. Its purpose is to keep the classification frame active throughout an entire session — not just at the moment Codex writes to a file, but while it reads, reasons, plans, and evaluates. It gives Codex a structured way to distinguish what is verified project evidence from what is chat context, operator guidance, working hypothesis, or an unverified assumption baked into the model itself.
@@ -18,7 +18,7 @@ Canon Boundary Guard defines six provenance layers — **L0 through L3** — tha
 
 The plugin ships two main components:
 
-- **SKILL.md session frame** — The full operating specification. When invoked at the start of a session, Codex reads the entire skill before responding, adopts the frame silently, and keeps it active for reading, analysis, planning, conflict detection, and write decisions. Inline tags (`[L1]`, `[L2]`, `[L3]`, etc.) mark non-L0 material whenever the output would change if the source were different. A dossier protocol surfaces provenance conflicts before Codex writes persistent content.
+- **SKILL.md session frame** — The full operating specification. When invoked at the start of a session, Codex reads the entire skill before responding, adopts the frame silently, and keeps it active for reading, analysis, planning, conflict detection, and write decisions. Inline tags (`[L1]`, `[L1A]`, `[L2]`, `[L2A]`, `[L3]`) mark non-L0 material whenever the output would change if the source were different. A dossier protocol surfaces provenance conflicts before Codex writes persistent content.
 
 - **Optional PreToolUse hook** — A lightweight Python script (`inject_frame.py`) that reads the compact reference frame from `references/frame.md` and re-injects it into the instruction stream immediately before matched write tools (`apply_patch`, `Write`, `Edit`). The hook is a reinforcement point, not the core mechanism. The full classification frame is established by the skill at session start; the hook ensures it is also present at the exact moment a write may occur. It does not block tool calls or rewrite requested operations.
 

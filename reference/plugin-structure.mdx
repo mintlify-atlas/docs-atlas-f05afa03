@@ -1,7 +1,7 @@
 ---
-title: "Plugin Structure and File Layout"
+title: "Canon Boundary Guard Plugin Structure and File Layout"
 sidebarTitle: "Plugin Structure"
-description: "The Canon Boundary Guard plugin layout: marketplace manifest, plugin.json manifest, skill files, hook configuration, and the inject_frame script, all under plugins/canon-boundary-guard-codex/."
+description: "Directory tree, file roles, and manifest contents for the Canon Boundary Guard Codex plugin — plugin.json, marketplace.json, and agents/openai.yaml."
 ---
 
 Canon Boundary Guard is installed as a Codex plugin. Codex discovers it through the marketplace manifest at `.agents/plugins/marketplace.json`, which points to the plugin directory at `plugins/canon-boundary-guard-codex/`. Inside that directory, `.codex-plugin/plugin.json` identifies the plugin, declares its skills path, and points to the hook configuration. Once Codex loads the plugin, it makes the bundled `canon-boundary-guard` skill available to the session and — when plugin hooks are enabled — wires the `inject_frame.py` script into the `PreToolUse` lifecycle event for matched write tools.
@@ -142,7 +142,7 @@ The `.agents/plugins/marketplace.json` file exposes the plugin to the Codex mark
   <Card title="inject_frame.py" icon="code" href="/reference/inject-frame-script">
     The hook payload script that reads frame.md and emits structured JSON for Codex.
   </Card>
-  <Card title="frame.md" icon="frame" href="/reference/frame-md">
+  <Card title="frame.md" icon="file-lines" href="/reference/frame-md">
     The compact provenance classification frame injected before write tools.
   </Card>
   <Card title="SKILL.md" icon="book" href="/reference/skill-md">
