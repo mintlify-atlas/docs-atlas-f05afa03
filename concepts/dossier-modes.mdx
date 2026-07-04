@@ -1,0 +1,83 @@
+---
+title: "Dossier Modes for Edit Evidence"
+sidebarTitle: "Dossier Modes"
+description: "Canon Boundary Guard defines three dossier modes — mechanical, semantic, and promotion — that determine how much evidence must be surfaced before Codex writes persistent content."
+---
+
+Before Codex writes or reorganizes project content, Canon Boundary Guard requires an appropriate level of evidence documentation. The requirement scales with the complexity and provenance risk of the intended change. Simple mechanical edits with unambiguous L0 grounding need no ceremony. Complex promotions of conversation material or model assumptions into project files require a full dossier and a deliberate stop before any write happens. This graduated system keeps the cost of safe edits low while making high-risk persistence decisions visible and reviewable.
+
+## The Three Modes
+
+### Mode A — Mechanical Edit with Clear L0 Provenance
+
+**No dossier required.**
+
+The change is fully grounded in L0 evidence. The edit is mechanical — it applies something that already exists in the project without introducing new decisions, new names, or new behavior. Provenance is unambiguous and conflicts are absent.
+
+**Examples of Mode A triggers:**
+- Renaming a variable to match its definition in test output — the correct name is in L0, the change is deterministic.
+- Fixing a typo in a string that matches its canonical form in a schema or config file.
+- Updating an import path after a file was moved, confirmed by git state.
+
+---
+
+### Mode B — Semantic Edit Reorganizing Existing Evidence
+
+**Compact dossier required.**
+
+The change reorganizes, restructures, or reinterprets material that exists in the project, but doing so involves interpretation. The edit is not purely mechanical — it requires judgment about what the evidence means or how it should be structured. A compact dossier surfaces the key evidence and flags any points of interpretation before writing proceeds.
+
+**Examples of Mode B triggers:**
+- Restructuring a module that was discussed in the current session but already exists in the codebase — the structure is present in L0 but the reorganization involves choices.
+- Consolidating duplicate configuration blocks where the intended canonical form requires a decision about which values to keep.
+- Rewriting documentation prose that describes behavior already present in source files — the behavior is L0, the prose involves shaping.
+
+---
+
+### Mode C — Promotion of L1 or L3 into Persistent Content
+
+**Full dossier required. Stop before writing.**
+
+The change would write material that originated in conversation (L1) or model assumptions (L3) into a project file. This is the highest-risk class of edit because it crosses the persistence boundary without a pre-existing L0 anchor. A full dossier must be produced, the operator must review it, and Codex must not proceed to write until any unresolved conflicts are addressed and operator approval is confirmed.
+
+**Examples of Mode C triggers:**
+- Writing a new module section based on a feature discussed in the current conversation that does not yet exist in any project file.
+- Adding a configuration value whose default was stated as `[L3]` and has not been confirmed against any L0 source.
+- Creating a new document based on requirements described in chat that have not been committed to any project artifact.
+
+<Warning>
+  **Mode C requires stopping before writing.** Do not proceed to write if there are unresolved conflicts in the dossier or if operator approval for the specific authorized delta is missing. The stop is not optional — it is the mechanism that keeps L1 and L3 material from silently becoming project content.
+</Warning>
+
+## Full Dossier Format
+
+When Mode B or Mode C applies, use the following format exactly:
+
+```txt
+Target:
+Mode:
+Evidence:
+Authorized delta:
+Rejected shaping:
+Rejected model prior:
+Conflicts:
+Decision needed:
+```
+
+## Dossier Fields Explained
+
+**Target:** The specific file, section, or artifact being written or modified. Be precise — "the auth module" is not sufficient if the actual target is `src/auth/session.ts`.
+
+**Mode:** One of `A`, `B`, or `C`. Stating the mode makes the evidence requirement explicit and creates a reviewable record of why a dossier was or was not required.
+
+**Evidence:** The L0 material that grounds the change. List the specific files, test output, schema entries, or command results that support the edit. If no L0 evidence exists, that absence is itself important information — it is a signal that the edit may be Mode C.
+
+**Authorized delta:** The exact change that the operator has approved for this turn. This field bounds the write operation. Anything outside this scope is not authorized and must not be written, even if it seems consistent with the evidence.
+
+**Rejected shaping:** L1 material from the current conversation that was considered but not approved for persistence. Write `none` if nothing was rejected. Do not invent rejected items — this field exists to surface real conflicts, not to demonstrate diligence.
+
+**Rejected model prior:** L3 material that was considered but not approved or verified. Write `none` if nothing was rejected. As with rejected shaping, do not fabricate entries.
+
+**Conflicts:** Any contradiction found between layers — for example, a project file that says one thing while a conversation message or model assumption says another. Unresolved conflicts block the write in Mode C. Write `none` if no conflicts were found.
+
+**Decision needed:** Any question that must be answered by the operator before the write can proceed. In Mode C, at least one decision-needed item will typically be present. Write `none` only when the dossier is complete and operator approval has been confirmed for all aspects of the authorized delta.

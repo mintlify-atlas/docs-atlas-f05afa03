@@ -1,0 +1,130 @@
+---
+title: "Configure the PreToolUse Hook for Canon Boundary Guard"
+sidebarTitle: "Hook Setup"
+description: "Wire the Canon Boundary Guard PreToolUse hook so the compact provenance frame re-surfaces before write tools like apply_patch, Write, and Edit."
+---
+
+Canon Boundary Guard ships with an optional `PreToolUse` hook that re-injects the compact classification frame from `frame.md` into the instruction stream immediately before matched write tools fire. The hook does not block tool calls or rewrite any requested operation — it is a reinforcement layer that puts the provenance classification frame back in front of Codex at the moment a write may happen, not a gate that prevents edits.
+
+## Prerequisites
+
+The Canon Boundary Guard plugin must be installed before configuring the hook. See the [installation guide](/installation) for setup steps.
+
+## Enable Hooks in Codex Config
+
+Plugin-bundled hooks are off by default. To enable them, add the following to your Codex `config.toml`:
+
+```toml
+[features]
+hooks = true
+plugin_hooks = true
+```
+
+Both keys are required. `hooks` enables the hook system; `plugin_hooks` allows plugin-bundled hooks to run.
+
+## Setup Steps
+
+<Steps>
+  <Step title="Add the TOML config">
+    Open your Codex `config.toml` and add the `[features]` block shown above. If a `[features]` section already exists, add the two keys to it rather than creating a duplicate section.
+  </Step>
+  <Step title="Restart Codex">
+    After saving `config.toml`, restart Codex fully. The hook system reads configuration at startup; a running instance will not pick up the change without a restart.
+  </Step>
+  <Step title="Review and trust the hook">
+    Plugin hooks are non-managed hooks and do not run until explicitly trusted.
+
+    - If your Codex UI exposes a hook review view, use `/hooks` to inspect and trust the bundled hook.
+    - In editor integrations where `/hooks` is not available, open the plugin details panel or approve the hook when Codex shows the trust prompt.
+
+    Until the hook is trusted, it will not fire even if the config is correct.
+  </Step>
+</Steps>
+
+## Hook Configuration
+
+The hook is defined in `plugins/canon-boundary-guard-codex/hooks/hooks.json` in the plugin directory. Its full configuration is:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ${PLUGIN_ROOT}/skills/canon-boundary-guard/scripts/inject_frame.py",
+            "timeout": 5,
+            "statusMessage": "Provenance frame"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The `matcher` field uses a pipe-separated pattern. The hook fires before any tool call whose name matches `apply_patch`, `Write`, or `Edit`. The `${PLUGIN_ROOT}` variable is resolved by Codex to the plugin's installed directory at runtime.
+
+## What the Hook Emits
+
+When the hook fires, `inject_frame.py` reads the contents of `frame.md` and emits a JSON payload with two fields:
+
+- **`hookSpecificOutput.additionalContext`** — the model-visible context path for `PreToolUse` hooks. Codex receives the full text of `frame.md` here, re-surfacing the compact classification layer immediately before the write tool runs.
+- **`systemMessage`** — a root-level system message visible in the UI or event stream. Both fields contain the same `frame.md` contents.
+
+The hook script itself is intentionally minimal:
+
+```python
+#!/usr/bin/env python3
+import json
+import pathlib
+import sys
+
+skill_dir = pathlib.Path(__file__).resolve().parents[1]
+frame_path = skill_dir / "references" / "frame.md"
+
+sys.stdin.read()
+
+try:
+    frame_text = frame_path.read_text(encoding="utf-8")
+except FileNotFoundError:
+    frame_text = "Canon Boundary Guard frame missing: provenance protection degraded."
+
+output = {
+    "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "additionalContext": frame_text.strip()
+    },
+    "systemMessage": frame_text.strip()
+}
+
+print(json.dumps(output))
+```
+
+<Warning>
+  The hook command uses `python` by default. If your system requires `python3` — for example, on systems where `python` is not in `PATH` or resolves to Python 2 — adjust the `command` field in your local copy of `hooks.json` to use `python3` instead:
+
+  ```json
+  "command": "python3 ${PLUGIN_ROOT}/skills/canon-boundary-guard/scripts/inject_frame.py"
+  ```
+</Warning>
+
+## Limitations
+
+In current Codex runtimes, some edits may be applied through internal file-change paths that do not expose a visible hook event. When this happens, the `PreToolUse` hook does not fire for those operations. Treat the hook as best-effort reinforcement at matched write points — it is not a complete enforcement mechanism and cannot guarantee coverage of every possible write path.
+
+<Note>
+  The hook is recommended but not required. The full `SKILL.md` frame is the core mechanism of Canon Boundary Guard. The hook re-surfaces the compact `frame.md` content as a reinforcement layer near write tools. Sessions without the hook active still benefit from the full frame loaded at activation.
+</Note>
+
+## Fallback Behavior
+
+If `frame.md` is missing from the plugin directory when the hook fires, the script does not crash silently. Instead, it emits the following message as both `additionalContext` and `systemMessage`:
+
+```txt
+Canon Boundary Guard frame missing: provenance protection degraded.
+```
+
+The failure is surfaced in the UI and event stream without blocking the tool call or the session. This behavior is intentional: Canon Boundary Guard should not make normal work impossible because a local file is absent, but it should also not fail without any signal.

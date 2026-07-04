@@ -1,0 +1,98 @@
+---
+title: "Install Canon Boundary Guard in Codex"
+sidebarTitle: "Installation"
+description: "Add Canon Boundary Guard to Codex via the plugin marketplace, enable the plugin, and optionally turn on the PreToolUse hook in three steps."
+---
+
+Installing Canon Boundary Guard adds the plugin to your Codex environment, makes the `$canon-boundary-guard` skill available for session activation, and — if you choose — wires the bundled PreToolUse hook so the compact classification frame is automatically re-injected before matched write operations. Installation is handled entirely through the Codex plugin system; no manual file copying is required for the standard setup.
+
+## Install the Plugin
+
+<Steps>
+  <Step title="Add the repository via the marketplace">
+    Run the following command to register the Canon Boundary Guard repository as a Codex plugin source:
+
+    ```txt
+    codex plugin marketplace add XxYouDeaDPunKxX/canon-boundary-guard-codex
+    ```
+
+    This makes the plugin available in Codex but does not yet enable it.
+  </Step>
+
+  <Step title="Enable Canon Boundary Guard in the plugin picker">
+    Open Codex and navigate to the plugin list. In Codex UIs that support slash commands, open the plugin picker with:
+
+    ```txt
+    /plugins
+    ```
+
+    Find **Canon Boundary Guard** in the list and enable it. The skill and hook bundle will be registered with your Codex installation.
+  </Step>
+
+  <Step title="Activate in a new thread">
+    Start a new Codex thread and tell Codex to use the plugin for the session:
+
+    ```txt
+    Use Canon Boundary Guard for this session.
+    ```
+
+    Codex will read the full `SKILL.md` frame and adopt the provenance classification posture silently — no confirmation message is shown. The frame remains active for the duration of the session.
+  </Step>
+</Steps>
+
+## Enabling the Hook
+
+<Note>
+  The PreToolUse hook is optional but recommended for sessions where repository content, project rules, naming conventions, workflows, or `AGENTS.md` authority may be relevant. Without the hook, the classification frame is still fully active via the skill — the hook only re-surfaces the compact frame at the exact moment a write tool is called, as an additional reinforcement layer.
+</Note>
+
+To enable the bundled hook, add the following to your Codex `config.toml`:
+
+```toml
+[features]
+hooks = true
+plugin_hooks = true
+```
+
+After saving the configuration, **restart Codex** so the hook registration takes effect.
+
+Once Codex is running again, review and trust the bundled hook:
+
+- **If your Codex UI exposes `/hooks`** — open the hook review view and trust the Canon Boundary Guard hook listed there.
+- **In editor integrations** where `/hooks` is not available — open the plugin details panel or approve the hook when Codex shows the trust prompt.
+
+Plugin-bundled hooks are non-managed hooks and will not run until explicitly trusted.
+
+The bundled hook configuration targets `apply_patch`, `Write`, and `Edit` operations:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ${PLUGIN_ROOT}/skills/canon-boundary-guard/scripts/inject_frame.py",
+            "timeout": 5,
+            "statusMessage": "Provenance frame"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+The hook emits the classification frame as `hookSpecificOutput.additionalContext` (the model-visible context path for `PreToolUse`) and also surfaces it as a `systemMessage` so the hook activity remains visible in the UI or event stream. It does not block the tool call or modify the requested operation.
+
+<Warning>
+  The hook command uses `python` by default. If your system requires `python3`, you must adjust the hook command in your local plugin copy or configure an equivalent hook entry in your Codex `config.toml` that uses `python3` explicitly. Failing to do this on a `python3`-only system will cause the hook to silently fail to execute.
+</Warning>
+
+## Legacy and Manual Setup
+
+<Tip>
+  If you prefer to manage the skill manually without the plugin system — for example, to pin a specific version or to inspect and modify the skill files directly before use — the older standalone layout is preserved in the `standalone-skill-v1` branch of the repository. Check out that branch and copy the `canon-boundary-guard/` folder into your Codex skills directory. Note that the standalone branch does not include the plugin manifest or the hook bundle; hook setup must be done manually if desired.
+</Tip>

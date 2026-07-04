@@ -1,47 +1,94 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with Canon Boundary Guard"
+sidebarTitle: "Quickstart"
+description: "Activate Canon Boundary Guard in a Codex session, verify the provenance frame is active, and run your first classification-aware workflow in under five minutes."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
+This guide walks you through activating Canon Boundary Guard in a live Codex session, understanding what happens when the frame is adopted, and making your first request under the provenance classification posture. By the end you will have the plugin running, know how session behavior changes under the frame, and know what to do when context is compressed.
 
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+## Activate and Explore the Frame
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Install the plugin">
+    If you have not already installed Canon Boundary Guard, add it to Codex now with the marketplace command:
 
-    ```bash
-    npm install your-package
+    ```txt
+    codex plugin marketplace add XxYouDeaDPunKxX/canon-boundary-guard-codex
     ```
+
+    Then open `/plugins` in Codex and enable **Canon Boundary Guard**. Full installation details, including hook setup, are covered on the [Installation page](/installation).
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
+  <Step title="Start a new thread and activate the frame">
+    Open a fresh Codex thread. Activate the plugin by telling Codex to use it for the session:
+
+    ```txt
+    Use Canon Boundary Guard for this session.
     ```
+
+    You can also invoke the bundled skill directly by name:
+
+    ```txt
+    Use $canon-boundary-guard for this session.
+    ```
+
+    Both forms trigger the same behavior: Codex reads the full `SKILL.md` operating specification before responding and adopts the provenance classification frame as its session-level posture.
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
 
-    ```bash
-    your-cli start
-    ```
+  <Step title="Observe how the frame is adopted">
+    Canon Boundary Guard is adopted **silently** — Codex does not emit a confirmation message. Instead, before interpreting your first request, Codex scans the visible conversation prefix.
+
+    If a leading user-role message begins with `AGENTS.md instructions for <path>`, Codex classifies that entire block as **L2A** Codex instruction-chain prelude. It is not counted as your first request, and it is not treated as project content or ordinary chat. Any `<environment_context>...</environment_context>` block inside it is classified as runtime environment metadata.
+
+    Your first real operator request is the first message after that prelude. From that point, the frame is active: non-L0 material will be tagged inline when it appears in output, provenance conflicts will be surfaced before writes, and the dossier protocol will engage when L1 or L3 material is promoted to persistent content.
+  </Step>
+
+  <Step title="Make your first classification-aware request">
+    Ask Codex to perform any task that touches project files — for example, editing a source file or updating documentation. Watch for inline provenance tags in Codex's response.
+
+    When Codex draws on material that is not verified project evidence, it will label it inline. For example:
+
+    - A version number from model memory and not from a lockfile will appear as `[L3]`
+    - A decision from the current conversation that has not been written to disk yet will appear as `[L1]`
+    - An operator-approved change staged for this turn will appear as `[L1A]`
+
+    Tags appear only when the output would change if the source were different — a rule, a name, a version, a behavioral claim. Codex will not tag every word; only material whose provenance is relevant to the decision being made.
+
+    If the PreToolUse hook is enabled, you will also see a **"Provenance frame"** status message in the event stream immediately before each `apply_patch`, `Write`, or `Edit` tool call. That message confirms the compact classification frame was re-injected into the instruction stream at the write moment.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## What the Frame Does
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+The six provenance layers define how Codex classifies every piece of information it encounters during the session. The classification determines what can safely become persistent project content and what must be surfaced before writing.
+
+| Layer | Name | What it covers |
+|-------|------|----------------|
+| **L0** | EVIDENCE | Project files, git state, tests, schemas, lockfiles, diagnostics, verified command output, and verified tool output from the current task. |
+| **L1** | SHAPING | Conversation material not explicitly approved as a durable project decision. Present in context, not in the project. |
+| **L1A** | AUTHORIZED DELTA | Material the operator has explicitly approved for persistence in the current turn. Becomes evidence only after it is written to a persistent artifact. |
+| **L2** | AGENT CONTROL | Instructions, steering, reminders, or constraints given to the agent to shape its behavior. Not project content. |
+| **L2A** | CODEX INSTRUCTION CHAIN | AGENTS guidance and runtime instruction-chain material loaded by Codex. Governs Codex behavior at its scope. Not project content. |
+| **L3** | MODEL PRIOR | Unverified model memory, assumed conventions, generic best-practice claims, version references, or unstated framework behavior not grounded in local evidence. |
+
+The critical boundary is **persistence**. L0 evidence can be preserved or reorganized freely. L1A can be written only within the explicitly approved scope of the current turn. L1, L2, L2A, and L3 material can shape how Codex works, but none of them should silently become repository content. If evidence from two layers conflicts, Codex will stop and report rather than resolve the conflict by recency, confidence, or intuition.
+
+## After Context Compaction
+
+<Note>
+  When Codex compresses long context — summarizing earlier conversation to stay within limits — the session frame may not survive intact in the compacted summary. If you notice that provenance tagging has stopped or that Codex is no longer surfacing classification conflicts, re-invoke the skill to re-establish the frame:
+
+  ```txt
+  Use Canon Boundary Guard for this session.
+  ```
+
+  The SKILL.md description explicitly calls for re-invocation after compaction. Treat it as a routine step when a session runs long.
+</Note>
+
+## Next Steps
+
+<Tip>
+  For the full definition of each provenance layer — including the persistence rules, inline tagging criteria, and authority hierarchy for L2A instruction-chain material — see [Provenance Layers](/concepts/provenance-layers).
+
+  For deeper usage guidance covering dossier modes (mechanical edits vs. semantic reorganization vs. L1/L3 promotion), decontamination flags, and conflict reporting patterns, see [Using the Skill](/guides/using-the-skill).
 </Tip>

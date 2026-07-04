@@ -1,0 +1,76 @@
+{
+  "projectType": "general",
+  "projectName": "Canon Boundary Guard",
+  "projectDescription": "A Codex plugin that keeps project evidence, chat context, operator instructions, working hypotheses, and model assumptions in separate cognitive layers via a provenance classification frame and optional PreToolUse hook.",
+  "theme": "luma",
+  "primaryColor": "#536878",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/provenance-layers",
+              "concepts/agents-md-authority",
+              "concepts/inline-tagging",
+              "concepts/dossier-modes"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/using-the-skill",
+              "guides/hook-setup",
+              "guides/decontamination",
+              "guides/session-workflow"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/plugin-structure",
+              "reference/hooks-json",
+              "reference/inject-frame-script",
+              "reference/frame-md",
+              "reference/skill-md"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Six-layer provenance classification system (L0–L3) for separating project evidence, conversation context, operator instructions, and model assumptions",
+    "Optional PreToolUse hook that re-surfaces the compact frame before matched write tools (apply_patch, Write, Edit)",
+    "AGENTS.md prelude detection — classifies leading runtime instruction-chain blocks as L2A regardless of displayed conversational role",
+    "Inline tagging system ([L1], [L1A], [L2], [L2A], [L3]) for marking non-L0 content in generated output",
+    "Three dossier modes (A/B/C) for mechanical edits, semantic reorganization, and promotion of shaping material",
+    "Decontamination rules for conversation residue, agent-control residue, version ghosts, and model-prior claims",
+    "Graceful fallback when frame.md is missing — emits a visible warning rather than failing silently",
+    "Standalone-skill legacy support via the standalone-skill-v1 branch"
+  ],
+  "publicApiSurface": [
+    "codex plugin marketplace add XxYouDeaDPunKxX/canon-boundary-guard-codex",
+    "Use Canon Boundary Guard for this session. (natural-language invocation)",
+    "Use $canon-boundary-guard for this session. (direct skill invocation)",
+    "PreToolUse hook — matcher: apply_patch|Write|Edit",
+    "inject_frame.py — emits hookSpecificOutput.additionalContext and systemMessage",
+    "references/frame.md — compact provenance frame injected by the hook",
+    "SKILL.md — full session-level operating frame",
+    "plugin.json — plugin manifest (name, version, skills, hooks, interface)",
+    "hooks.json — hook wiring configuration",
+    "agents/openai.yaml — Codex-facing skill metadata"
+  ]
+}

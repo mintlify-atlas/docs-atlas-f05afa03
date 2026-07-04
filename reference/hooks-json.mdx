@@ -1,0 +1,123 @@
+---
+title: "hooks.json — PreToolUse Hook Configuration"
+sidebarTitle: "hooks.json"
+description: "The hooks.json file wires the inject_frame.py script to the Codex PreToolUse lifecycle event for write tools, re-injecting the compact provenance frame before apply_patch, Write, and Edit."
+---
+
+`hooks.json` is the hook wiring manifest for the Canon Boundary Guard plugin. It configures a `PreToolUse` hook that triggers the `inject_frame.py` script whenever Codex is about to call a matched write tool. The hook does not block or modify the tool call — it re-surfaces the compact provenance classification frame in the model's instruction stream at the moment a write operation is about to happen, so the frame remains active not just at session start but also at the point where persistent changes are made.
+
+## File Contents
+
+The complete `hooks.json` at `plugins/canon-boundary-guard-codex/hooks/hooks.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python ${PLUGIN_ROOT}/skills/canon-boundary-guard/scripts/inject_frame.py",
+            "timeout": 5,
+            "statusMessage": "Provenance frame"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+## Field Reference
+
+<ParamField body="hooks.PreToolUse" type="array" required>
+  Array of hook rule objects for the `PreToolUse` lifecycle event. Each rule pairs a `matcher` with one or more hook definitions. Codex evaluates each rule's matcher against the name of the tool about to be called and fires the hooks for any rule that matches.
+</ParamField>
+
+<ParamField body="matcher" type="string" required>
+  A regex pattern matched against the tool name that Codex is about to invoke. When the tool name matches, all hooks in the rule's `hooks` array are triggered.
+
+  **Default:** `apply_patch|Write|Edit`
+
+  This pattern matches the three primary write tools: `apply_patch` (patch-based file editing), `Write` (full file write), and `Edit` (targeted file edit). Adjust the pattern to add or remove tools as needed.
+</ParamField>
+
+<ParamField body="type" type="string" required>
+  The hook execution type. `command` instructs Codex to run an external process and read its stdout as the hook output. This is the only type used by Canon Boundary Guard.
+</ParamField>
+
+<ParamField body="command" type="string" required>
+  The shell command to execute when the hook fires. `${PLUGIN_ROOT}` is resolved by Codex at runtime to the directory where the plugin is installed, so the path to `inject_frame.py` is always correct regardless of where the plugin is installed on the local system.
+
+  **Default:** `python ${PLUGIN_ROOT}/skills/canon-boundary-guard/scripts/inject_frame.py`
+</ParamField>
+
+<ParamField body="timeout" type="number">
+  The number of seconds Codex waits for the hook process to complete before considering it failed. If the hook does not complete within this window, Codex treats it as a non-blocking failure.
+
+  **Default:** `5`
+</ParamField>
+
+<ParamField body="statusMessage" type="string">
+  A short label displayed in the Codex UI while the hook is running. This provides visual feedback that the provenance frame hook is active without exposing the full frame content in the status bar.
+
+  **Default:** `Provenance frame`
+</ParamField>
+
+## Notes and Warnings
+
+<Note>
+  `${PLUGIN_ROOT}` is an environment variable injected by Codex at runtime. It resolves to the directory where the plugin is installed — typically somewhere under the Codex plugins directory. You do not need to set or export this variable manually; Codex provides it when executing plugin hook commands.
+</Note>
+
+<Warning>
+  If the target system requires `python3` rather than `python`, change the `command` field from `python ${PLUGIN_ROOT}/...` to `python3 ${PLUGIN_ROOT}/...` in your local copy of `hooks.json`. Some systems alias `python` to Python 2 or do not provide a `python` binary at all. The hook will silently fail to fire if the command cannot be resolved.
+</Warning>
+
+## Enabling Plugin Hooks
+
+Plugin-bundled hooks are off by default. To enable them, add the following to your Codex `config.toml`:
+
+```toml
+[features]
+hooks = true
+plugin_hooks = true
+```
+
+After making this change, restart Codex. If your Codex UI exposes a hook review view such as `/hooks`, use it to review and trust the bundled hook. In editor integrations where `/hooks` is not available, open the plugin details or approve the hook when Codex shows the trust prompt. Plugin hooks are non-managed hooks and do not run until trusted.
+
+## Hook Lifecycle
+
+The `PreToolUse` hook fires before Codex executes the matched tool call. The sequence is:
+
+1. Codex identifies the tool it is about to call (e.g., `apply_patch`).
+2. Codex evaluates the `matcher` regex against the tool name.
+3. If the matcher fires, Codex executes the `command` in a subprocess.
+4. The subprocess output is read as a JSON payload. The `hookSpecificOutput.additionalContext` field becomes model-visible context injected into the instruction stream before the tool runs.
+5. The `systemMessage` field surfaces the hook activity in the Codex UI or event stream.
+6. The original tool call proceeds unchanged — the hook does not block, rewrite, or cancel the operation.
+
+The hook's job is to put the compact classification frame back into the model's instruction stream at the moment a write may happen. It does not enforce policy or prevent writes; it re-surfaces the provenance frame as a reminder.
+
+<Info>
+  In current Codex runtimes, some file edits may be applied through internal file-change paths that do not expose a visible `PreToolUse` hook event. Treat the hook as a best-effort reinforcement layer rather than a complete enforcement mechanism.
+</Info>
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="inject_frame.py" icon="code" href="/reference/inject-frame-script">
+    The script executed by this hook — reads frame.md and emits the JSON payload.
+  </Card>
+  <Card title="frame.md" icon="frame" href="/reference/frame-md">
+    The compact classification frame that the hook injects before write tools.
+  </Card>
+  <Card title="Plugin Structure" icon="folder-tree" href="/reference/plugin-structure">
+    The full plugin file layout and manifest files.
+  </Card>
+  <Card title="SKILL.md" icon="book" href="/reference/skill-md">
+    The full session-level operating frame that the hook reinforces.
+  </Card>
+</CardGroup>

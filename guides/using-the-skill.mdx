@@ -1,0 +1,83 @@
+---
+title: "Using Canon Boundary Guard in a Codex Session"
+sidebarTitle: "Using the Skill"
+description: "Learn how to activate the Canon Boundary Guard frame, keep it running throughout a session, and apply it during reading, analysis, planning, and write decisions."
+---
+
+Canon Boundary Guard is a session-level operating frame that shapes how Codex handles information provenance from the moment it is invoked. This guide covers how to activate the skill, how to keep it active across a full session, and how it concretely changes Codex behavior during reading, analysis, planning, conflict detection, and persistence decisions — not only at write moments.
+
+## Invoking the Skill
+
+You can activate Canon Boundary Guard in two ways at the start of a new thread.
+
+**Natural language:**
+
+```txt
+Use Canon Boundary Guard for this session.
+```
+
+**Direct skill reference:**
+
+```txt
+Use $canon-boundary-guard for this session.
+```
+
+Both forms trigger the same activation sequence. Use whichever fits your workflow.
+
+### What Happens on Activation
+
+When the skill is invoked, Codex performs the following steps silently, without a confirmation message:
+
+1. **Reads the full `SKILL.md`** — the complete operating frame is loaded before any response or tool call.
+2. **Adopts the frame** — no acknowledgment is emitted. The frame becomes the active operating layer immediately.
+3. **Scans the conversation prefix** — Codex checks the visible conversation for a leading AGENTS.md prelude: a user-role message beginning with `AGENTS.md instructions for <path>`.
+4. **Classifies any prelude as L2A** — if found, the entire block is classified as `L2A CODEX INSTRUCTION CHAIN` runtime material, not operator chat and not project content. Any `<environment_context>...</environment_context>` block inside it is classified as runtime metadata.
+5. **Waits for the first operator request** — the first real operator message is the first user message after the prelude, if any was present.
+
+<Note>
+  The skill is a session-level operating frame, not a task-specific formatter or converter. It must be active from the start of a session, before any analysis or file work begins. Invoking it mid-task, after Codex has already reasoned over files or generated plans, does not retroactively apply the frame to prior reasoning.
+</Note>
+
+## Keeping the Frame Active
+
+Canon Boundary Guard is designed to remain active as the operating layer for the entire session. It is not a one-shot command that expires after a single task.
+
+After Codex performs context compaction during a long session — when it compresses earlier conversation history into a summary — the full `SKILL.md` content may no longer be directly present in context. Re-invoke the skill after compaction to re-establish the frame:
+
+```txt
+Use Canon Boundary Guard for this session.
+```
+
+Re-invoking triggers the same activation sequence and restores the full operating layer.
+
+## What Changes
+
+Activating Canon Boundary Guard changes how Codex behaves across all phases of a session, not only when writing files.
+
+### Reading
+
+As Codex reads project files, examines git state, or processes tool output, it classifies sources by layer. Project files, lockfiles, schemas, diagnostics, and verified tool output are classified as `L0 EVIDENCE`. Conversation context is `L1 SHAPING`. Model assumptions are `L3 MODEL PRIOR`. These labels travel with the material as Codex reasons.
+
+### Analysis and Planning
+
+When reasoning about the project or planning edits, Codex keeps non-L0 material distinct from verified evidence. A claim from the conversation is treated differently from a claim grounded in a project file. Unverified model assumptions are tagged `[L3]` inline when they would affect the output if the source were different.
+
+### Writes
+
+When Codex reaches a write decision, it applies the appropriate dossier mode based on where the content comes from:
+
+| Mode | When it applies | Dossier required |
+|------|----------------|-----------------|
+| **Mode A** | Mechanical edit with clear L0 provenance | None |
+| **Mode B** | Semantic reorganization of existing evidence | Compact dossier |
+| **Mode C** | Promotion of L1 or L3 material into persistent content | Full dossier — stop before writing |
+
+Mode C requires a full dossier and operator approval before any write proceeds.
+
+### Conflicts
+
+If evidence from different layers conflicts — for example, a conversation instruction says one thing but a project file says another — Codex stops and surfaces the conflict before proceeding. It does not resolve conflicts by recency, confidence, or intuition. The operator decides.
+
+<Tip>
+  Use Canon Boundary Guard in any session that touches project files, naming conventions, rules, protocols, or `AGENTS.md` content — or any session where instruction authority, chat context, and project evidence may be mixed. If there is any chance that conversation material or model assumptions could end up in persistent project files without scrutiny, the frame should be active.
+</Tip>

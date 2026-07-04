@@ -1,0 +1,50 @@
+---
+title: "Inline Tagging for Non-L0 Content"
+sidebarTitle: "Inline Tagging"
+description: "Canon Boundary Guard uses inline layer tags — [L1], [L1A], [L2], [L2A], [L3] — to mark content that would change if its source were different, keeping provenance visible in generated output."
+---
+
+When Codex produces content that draws on non-L0 material, it marks that content inline with a layer tag so the provenance stays visible and reviewable before anything is written to a project file. The tags are not decorative — they are a signal that a specific piece of content carries a specific kind of uncertainty or authority boundary. This keeps generated output honest about what is grounded in project evidence and what is not, so operators can approve, reject, or promote content with full visibility into its origin.
+
+## The Five Tags
+
+**`[L1]`** — Content that comes from the current conversation and has not been approved for persistence. It reflects what was discussed, proposed, or suggested in this session, but it is not yet a project decision.
+
+**`[L1A]`** — Content that the operator has explicitly approved this turn, pending the actual write. It has been promoted from L1 and is ready to become a project artifact within the approved scope.
+
+**`[L2]`** — Content that reflects agent-control instructions or behavioral steering. It is not project content and should not be written to project files through a normal edit.
+
+**`[L2A]`** — Content that originates from AGENTS.md or Codex instruction-chain guidance. It governs Codex behavior and is not project content.
+
+**`[L3]`** — Content that comes from model memory, assumed conventions, generic best practice, or framework behavior not grounded in local L0 evidence. It is unverified.
+
+## The Tagging Rule
+
+Tag when the content **would change if the source were different** — a rule, a name, a version number, a claim about how something behaves. If a sentence asserts a specific behavior of a library that Codex is inferring from training rather than from a lockfile or test output in the project, that assertion gets `[L3]`. If a design decision was proposed in the current conversation but not yet approved for writing, the corresponding content gets `[L1]`.
+
+Do not tag every word. Do not tag structural prose, transitions, or explanations that do not depend on a specific non-L0 source. The purpose of the tag is to identify content that carries a provenance risk — not to annotate every sentence to appear thorough.
+
+## Example
+
+Consider a Codex response that combines evidence from the project with a model assumption about a library version:
+
+```txt
+The `createSession` function in `src/auth/session.ts` accepts an options
+object and returns a `Promise<Session>` (L0 — confirmed in the project
+source). The default token expiry is 3600 seconds [L3] — this is an assumed
+default not confirmed in the local configuration files. If the operator
+approves using 3600 as the working value, it can be written as L1A.
+```
+
+In this example:
+- The function signature and file location are L0 — they come directly from the project source and need no tag.
+- The default expiry value is `[L3]` because it is an assumed framework behavior not present in any project file.
+- The path to promotion is explicitly described: operator approval would make it `[L1A]`, at which point it can be written.
+
+<Tip>
+  **Promoting to L1A:** If an operator approves L1 or L3 material for persistence — confirming it is correct and should be written — that material transitions to L1A. Only after that transition can it be written to a project file. The tag in the output changes from `[L1]` or `[L3]` to `[L1A]` to reflect the approval, and the authorized scope of the write is bounded to exactly what was approved.
+</Tip>
+
+<Note>
+  **When not to tag:** Tags only appear when they would change something about a specific piece of content. Tagging every sentence, adding tags to structural text, or tagging to demonstrate diligence defeats the purpose of the system. A response full of tags on neutral prose is harder to review than a response where tags appear precisely where provenance matters. The goal is signal, not coverage.
+</Note>

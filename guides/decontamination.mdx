@@ -1,0 +1,139 @@
+---
+title: "Decontamination: Removing Non-L0 Residue Before Persistence"
+sidebarTitle: "Decontamination"
+description: "Canon Boundary Guard defines four categories of residue — conversation, agent-control, version ghosts, and model-prior claims — that must be flagged before any material is written to project files."
+---
+
+Before persisting any content to project files, Canon Boundary Guard requires scanning the planned output for four types of residue. Each category represents material that originated outside project evidence — from the current conversation, from agent-steering instructions, from version references with no grounding in the project, or from generic model assumptions. If any of these patterns appear in content targeted for persistence, they must be flagged and resolved before writing. Silently including them contaminates project files with non-L0 material.
+
+## Residue Categories
+
+### Conversation Residue
+
+Phrases that reference the current chat rather than project reality. These phrases are meaningful inside a conversation but have no grounding in project files and should never appear in persistent content.
+
+**Flagged patterns:**
+
+| Language | Phrases |
+|----------|---------|
+| English | "as discussed", "as said before", "from the previous session" |
+| Italian | "come detto prima", "come discusso", "l'utente vuole" |
+
+**Example — before:**
+
+```txt
+As discussed, the timeout value should be set to 30 seconds.
+```
+
+**Example — after (resolved):**
+
+```txt
+The timeout value is set to 30 seconds per the configuration in `config/defaults.yaml`.
+```
+
+The resolved form is grounded in a project file. The conversational reference is removed entirely.
+
+---
+
+### Agent-Control Residue
+
+Instructions that were written to steer the agent during the session, but have leaked into content that would be written to project files. These phrases describe agent behavior, not project reality.
+
+**Flagged patterns:**
+
+| Language | Phrases |
+|----------|---------|
+| English | "remember to", "I should" |
+| Italian | "ricordati", "devo", "non devo" |
+| Any | Temporary instructions to the agent |
+
+**Example — before:**
+
+```txt
+Remember to update the manifest after adding a new dependency.
+```
+
+**Example — after (resolved):**
+
+```txt
+Update the manifest after adding a new dependency.
+```
+
+If the instruction belongs in project documentation, rewrite it as a declarative statement grounded in project process. If it was only ever meant for the agent, remove it entirely.
+
+---
+
+### Version Ghosts
+
+Version references that are not present in `L0` sources — project files, lockfiles, schemas, or verified tool output. A version number that came from model memory or a conversation mention is `L3` until confirmed in a project file.
+
+**Example — before:**
+
+```txt
+This library requires React 18.3 or later.
+```
+
+**Example — after (resolved or flagged):**
+
+```txt
+This library requires React 18.3 or later. [L3 — version not confirmed in package.json or lockfile]
+```
+
+If the version cannot be confirmed from `L0`, tag it `[L3]` and surface it for operator approval before writing. If it can be confirmed, cite the source file.
+
+---
+
+### Model-Prior Claims
+
+Generic best-practice language that is not grounded in local evidence. These phrases assert quality or correctness based on general model knowledge rather than the project's actual decisions, constraints, or context.
+
+**Flagged patterns:**
+
+```txt
+"best practice"
+"standard approach"
+"recommended"
+"modern convention"
+"industry standard"
+"normally"
+"usually"
+```
+
+**Example — before:**
+
+```txt
+It is best practice to use environment variables for secrets.
+```
+
+**Example — after (resolved or flagged):**
+
+```txt
+This project stores secrets as environment variables, as specified in `docs/security-policy.md`.
+```
+
+If the claim is grounded in a project file or policy, cite it. If it is not grounded, remove it or tag it `[L3]` and surface it before writing.
+
+---
+
+## Exception Rule
+
+These patterns are allowed — and do not require flagging — in three cases:
+
+1. **Grounded in L0** — the phrase is backed by a project file, lockfile, schema, or verified tool output that is cited.
+2. **Explicitly approved as L1A** — the operator has explicitly authorized the material for persistence in the current turn.
+3. **Intentionally written in a historical or migration context** — for example, a migration guide that deliberately references previous versions or past conventions as historical context.
+
+Outside these cases, flag and resolve before writing.
+
+<Warning>
+  If any of these patterns appear in content you are about to write to a project file, stop before writing. Surface the flagged items to the operator and wait for a decision. Do not silently include them on the assumption that the operator intended them — that assumption is itself an unverified L3 claim.
+</Warning>
+
+<Tip>
+  When promoting any content that may contain these patterns, use Mode C dossier. The full dossier format includes dedicated fields for this work:
+
+  - **Rejected shaping** — conversation residue and agent-control residue that was removed
+  - **Rejected model prior** — model-prior claims that were removed or grounded
+
+  Filling these fields makes the decontamination step explicit and auditable before the operator approves the write.
+</Tip>

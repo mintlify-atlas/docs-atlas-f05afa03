@@ -1,0 +1,55 @@
+---
+title: "AGENTS.md Authority and the L2A Prelude"
+sidebarTitle: "AGENTS.md Authority"
+description: "Canon Boundary Guard detects AGENTS.md instruction-chain preludes by header shape and classifies them as L2A regardless of their displayed conversational role."
+---
+
+In editor-integrated Codex sessions, `AGENTS.md` instructions may appear at the very start of the conversation as a visible user-role message — before the operator has sent a single real request. Because the message occupies the user turn, it can look like ordinary operator chat or, worse, like a project file being quoted back. If that misclassification sticks, Codex may treat behavioral instructions as project evidence or count the prelude as the operator's first request, corrupting both the authority model and the turn-sequencing logic.
+
+## The Classification Rule
+
+A leading user-role message whose content begins with:
+
+```txt
+AGENTS.md instructions for <path>
+```
+
+is classified as **L2A Codex instruction-chain material**. It is not L1 user conversation. It is not L0 project content. The classification is determined by header shape alone — the `AGENTS.md instructions for <path>` opening pattern is sufficient. It does not depend on filesystem confirmation, on whether the referenced path resolves, or on which conversational role the message is displayed under.
+
+When this block appears as a leading conversation prelude, it is classified retroactively as L2A before interpreting any later messages.
+
+<Warning>
+  Do not classify `AGENTS.md` guidance as project content or as ordinary user conversation. Do not count the prelude message as the operator's first request. The operator's first request is the first user message that appears **after** the AGENTS/runtime prelude has ended.
+</Warning>
+
+## Instruction Scopes
+
+L2A guidance arrives from two scopes, and both are active for the session:
+
+**Global scope** — Guidance from the Codex home directory. This includes `AGENTS.override.md` or `AGENTS.md` stored in `$CODEX_HOME`, which defaults to `~/.codex` on Unix-like systems and `%USERPROFILE%\.codex` on Windows. Global-scope guidance applies across sessions regardless of the current repository.
+
+**Project scope** — Guidance from `AGENTS.override.md`, `AGENTS.md`, or any configured fallback instruction files located within the current repository path. Project-scope guidance is specific to the repository being worked on.
+
+A prelude block may reference the current working directory even when its actual source is global-scope guidance. The referenced path in `AGENTS.md instructions for <path>` identifies what the guidance applies to, not necessarily where the instruction file lives.
+
+## The `<environment_context>` Block
+
+If the AGENTS.md prelude contains an `<environment_context>...</environment_context>` block, that block is **runtime environment metadata** — not operator-authored prose, not project content, and not user instruction. It describes the runtime context Codex is operating in. Treat it as structural metadata attached to the prelude, classified as L2A alongside the rest of the prelude.
+
+## What Counts as the First Operator Request
+
+The first operator request is the first user message that arrives after the AGENTS/runtime prelude has been fully processed. Turn-counting, instruction-following, and any session initialization logic that depends on "what the operator first asked" all start from that message — not from the prelude.
+
+## Example Prelude Opening
+
+A prelude block looks like this at its opening line:
+
+```txt
+AGENTS.md instructions for /home/user/projects/my-repo
+```
+
+Everything that follows that header line — until the prelude ends and the first genuine operator message begins — is L2A instruction-chain material.
+
+<Note>
+  **After-prelude discovery:** After the prelude has been applied, read any discoverable Codex-home instruction sources (`$CODEX_HOME`, or the platform default such as `~/.codex` on Unix or `%USERPROFILE%\.codex` on Windows) before treating instruction authority as closed. L2A guidance from global scope may supplement or override project-scope guidance, and all of it should be incorporated before acting on the first operator request.
+</Note>

@@ -1,0 +1,151 @@
+---
+title: "Plugin Structure and File Layout"
+sidebarTitle: "Plugin Structure"
+description: "The Canon Boundary Guard plugin layout: marketplace manifest, plugin.json manifest, skill files, hook configuration, and the inject_frame script, all under plugins/canon-boundary-guard-codex/."
+---
+
+Canon Boundary Guard is installed as a Codex plugin. Codex discovers it through the marketplace manifest at `.agents/plugins/marketplace.json`, which points to the plugin directory at `plugins/canon-boundary-guard-codex/`. Inside that directory, `.codex-plugin/plugin.json` identifies the plugin, declares its skills path, and points to the hook configuration. Once Codex loads the plugin, it makes the bundled `canon-boundary-guard` skill available to the session and — when plugin hooks are enabled — wires the `inject_frame.py` script into the `PreToolUse` lifecycle event for matched write tools.
+
+## Directory Tree
+
+The full layout of the plugin within the repository is:
+
+```txt
+.agents/
+`-- plugins/
+    `-- marketplace.json
+plugins/
+`-- canon-boundary-guard-codex/
+    |-- .codex-plugin/
+    |   `-- plugin.json
+    |-- hooks/
+    |   `-- hooks.json
+    `-- skills/
+        `-- canon-boundary-guard/
+            |-- SKILL.md
+            |-- agents/openai.yaml
+            |-- references/frame.md
+            `-- scripts/inject_frame.py
+```
+
+## File Roles
+
+| File | Role |
+|---|---|
+| `.agents/plugins/marketplace.json` | Exposes the plugin as a marketplace entry so Codex can discover and install it |
+| `plugins/canon-boundary-guard-codex/.codex-plugin/plugin.json` | Plugin manifest: identifies the plugin, points to skills and hooks |
+| `skills/canon-boundary-guard/SKILL.md` | Full session-level operating frame read by Codex on activation |
+| `skills/canon-boundary-guard/agents/openai.yaml` | Codex-facing skill metadata: display name, short description, default prompt, and policy |
+| `skills/canon-boundary-guard/references/frame.md` | Compact classification frame injected by the hook before write tools |
+| `skills/canon-boundary-guard/scripts/inject_frame.py` | Reads `frame.md` and emits the `PreToolUse` hook payload as JSON |
+| `hooks/hooks.json` | Wires `inject_frame.py` to the `PreToolUse` hook for matched write tools |
+
+## plugin.json
+
+The plugin manifest at `plugins/canon-boundary-guard-codex/.codex-plugin/plugin.json` identifies the plugin to Codex, provides display metadata, and declares the relative paths for skills and the hook configuration file.
+
+```json
+{
+  "name": "canon-boundary-guard-codex",
+  "version": "1.0.0",
+  "description": "Codex plugin for keeping provenance and cognitive layers separate across a session.",
+  "author": {
+    "name": "XxYouDeaDPunKxX",
+    "url": "https://github.com/XxYouDeaDPunKxX"
+  },
+  "homepage": "https://xxyoudeadpunkxx.github.io/canon-boundary-guard-codex/",
+  "repository": "https://github.com/XxYouDeaDPunKxX/canon-boundary-guard-codex",
+  "license": "CC-BY-SA-4.0",
+  "keywords": [
+    "codex",
+    "skill",
+    "plugin",
+    "hooks",
+    "provenance",
+    "agent-control",
+    "cognitive-layers",
+    "ai-workflows"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Canon Boundary Guard",
+    "shortDescription": "Provenance boundary guard for Codex",
+    "longDescription": "Canon Boundary Guard packages a Codex skill and optional lifecycle hook for keeping project evidence, chat context, operator instructions, working hypotheses, and model assumptions in separate cognitive layers.",
+    "developerName": "XxYouDeaDPunKxX",
+    "category": "Productivity",
+    "capabilities": [
+      "Workflow",
+      "Automation"
+    ],
+    "websiteURL": "https://xxyoudeadpunkxx.github.io/canon-boundary-guard-codex/",
+    "defaultPrompt": [
+      "Use Canon Boundary Guard as the session operating frame.",
+      "Use $canon-boundary-guard for provenance and cognitive-layer separation."
+    ],
+    "brandColor": "#536878"
+  }
+}
+```
+
+<Note>
+  The `brandColor` field value `#536878` is the canonical brand color for Canon Boundary Guard. It is used by Codex UIs that render plugin identity — such as the plugin picker and marketplace listings — to display the plugin with its designated slate-blue tone.
+</Note>
+
+## agents/openai.yaml
+
+The `agents/openai.yaml` file provides Codex-facing skill metadata. It declares the display name, a short description used in skill lists, the default invocation prompt, and the policy that allows Codex to activate the skill implicitly when context suggests it is needed.
+
+```yaml
+interface:
+  display_name: "Canon Boundary Guard"
+  short_description: "Session provenance frame for Codex cognitive-layer separation"
+  default_prompt: "Use $canon-boundary-guard as the session operating frame for provenance and cognitive-layer separation."
+
+policy:
+  allow_implicit_invocation: true
+```
+
+## marketplace.json
+
+The `.agents/plugins/marketplace.json` file exposes the plugin to the Codex marketplace discovery mechanism. It declares the plugin's name, display name, source location, installation policy, and category.
+
+```json
+{
+  "name": "canon-boundary-guard",
+  "interface": {
+    "displayName": "Canon Boundary Guard"
+  },
+  "plugins": [
+    {
+      "name": "canon-boundary-guard-codex",
+      "source": {
+        "source": "local",
+        "path": "./plugins/canon-boundary-guard-codex"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
+```
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="hooks.json" icon="webhook" href="/reference/hooks-json">
+    The hook wiring manifest that connects inject_frame.py to the PreToolUse lifecycle event.
+  </Card>
+  <Card title="inject_frame.py" icon="code" href="/reference/inject-frame-script">
+    The hook payload script that reads frame.md and emits structured JSON for Codex.
+  </Card>
+  <Card title="frame.md" icon="frame" href="/reference/frame-md">
+    The compact provenance classification frame injected before write tools.
+  </Card>
+  <Card title="SKILL.md" icon="book" href="/reference/skill-md">
+    The full session-level operating frame read by Codex on activation.
+  </Card>
+</CardGroup>

@@ -1,0 +1,64 @@
+---
+title: "Canon Boundary Guard: Provenance Safety for Codex"
+sidebarTitle: "Introduction"
+description: "Canon Boundary Guard is a Codex plugin that separates project evidence, chat context, operator instructions, and model assumptions into distinct cognitive layers."
+---
+
+Canon Boundary Guard is a Codex plugin that packages a provenance-boundary skill and an optional lifecycle hook. Its purpose is to keep the classification frame active throughout an entire session — not just at the moment Codex writes to a file, but while it reads, reasons, plans, and evaluates. It gives Codex a structured way to distinguish what is verified project evidence from what is chat context, operator guidance, working hypothesis, or an unverified assumption baked into the model itself.
+
+## The Problem It Solves
+
+When Codex works on a repository, it draws from multiple sources simultaneously: files already in the project, messages from the current conversation, operator instructions, runtime context loaded at session start, and assumptions the model carries from training. These sources do not carry equal authority. A project file verified by `git` state is not the same as a temporary chat message. An instruction that shapes how Codex behaves is not the same as content that belongs in the repository. A generic best-practice claim from the model is not the same as a decision grounded in local evidence.
+
+Without a classification frame, those boundaries blur. Codex may silently promote a conversational assumption into a committed file, or treat model-prior convention as if it were a verified local rule. Canon Boundary Guard exists to keep those boundaries visible throughout the session, so provenance conflicts surface before they become persistent.
+
+## What the Plugin Provides
+
+Canon Boundary Guard defines six provenance layers — **L0 through L3** — that cover every class of information Codex may encounter: verified project evidence, conversation material, operator-approved changes, agent-control instructions, Codex runtime instruction-chain guidance, and unverified model memory. These layers form a compact classification frame that Codex adopts as a session-level operating posture.
+
+The plugin ships two main components:
+
+- **SKILL.md session frame** — The full operating specification. When invoked at the start of a session, Codex reads the entire skill before responding, adopts the frame silently, and keeps it active for reading, analysis, planning, conflict detection, and write decisions. Inline tags (`[L1]`, `[L2]`, `[L3]`, etc.) mark non-L0 material whenever the output would change if the source were different. A dossier protocol surfaces provenance conflicts before Codex writes persistent content.
+
+- **Optional PreToolUse hook** — A lightweight Python script (`inject_frame.py`) that reads the compact reference frame from `references/frame.md` and re-injects it into the instruction stream immediately before matched write tools (`apply_patch`, `Write`, `Edit`). The hook is a reinforcement point, not the core mechanism. The full classification frame is established by the skill at session start; the hook ensures it is also present at the exact moment a write may occur. It does not block tool calls or rewrite requested operations.
+
+## Get Started
+
+<CardGroup cols={2}>
+  <Card
+    title="Installation"
+    icon="download"
+    href="/installation"
+  >
+    Add Canon Boundary Guard to Codex via the plugin marketplace, enable the plugin, and optionally wire the PreToolUse hook.
+  </Card>
+  <Card
+    title="Quickstart"
+    icon="bolt"
+    href="/quickstart"
+  >
+    Activate the plugin in a new session, verify the frame is running, and make your first classification-aware request in under five minutes.
+  </Card>
+  <Card
+    title="Provenance Layers"
+    icon="layer-group"
+    href="/concepts/provenance-layers"
+  >
+    Full reference for L0 through L3: what each layer covers, when to apply inline tags, and how the persistence boundary works.
+  </Card>
+  <Card
+    title="Using the Skill"
+    icon="book-open"
+    href="/guides/using-the-skill"
+  >
+    Deeper guidance on dossier modes, decontamination flags, conflict reporting, and session compaction handling.
+  </Card>
+</CardGroup>
+
+## AGENTS.md Prelude Detection
+
+<Note>
+  In editor-integrated Codex sessions, `AGENTS.md` instructions may appear at the start of the conversation as a visible user-role message before the operator's real first request. That display role is not sufficient to determine authority — the block may reference the current working directory even when the instruction source is global, such as an `AGENTS.md` stored in the Codex home directory.
+
+  Canon Boundary Guard includes a countermeasure for this case. A leading message whose content begins with `AGENTS.md instructions for <path>` is classified as **L2A Codex instruction-chain material** — not ordinary chat and not repository content — based on its header shape alone, regardless of displayed conversational role or filesystem confirmation. Any `<environment_context>...</environment_context>` block inside it is treated as runtime environment metadata. The first real operator request is counted as the first message after this prelude. When this distinction matters, verify the authority layer before using the block as project evidence or writing it into persistent files.
+</Note>

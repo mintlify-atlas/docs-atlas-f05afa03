@@ -1,0 +1,104 @@
+---
+title: "frame.md — Compact Provenance Classification Frame"
+sidebarTitle: "frame.md"
+description: "frame.md is the compact version of the Canon Boundary Guard classification frame, injected by the hook before write tools as a concise reminder of the six provenance layers and their persistence rules."
+---
+
+`frame.md` is the compact version of the Canon Boundary Guard classification frame. While `SKILL.md` is the full session-level document read at activation, `frame.md` is a short reference injected by the `inject_frame.py` hook at write moments — specifically before `apply_patch`, `Write`, and `Edit` tool calls. It serves as a quick reminder of the provenance layer definitions and the key rules about what may and may not be persisted, so those rules remain visible at the exact moment a persistent change is about to be made.
+
+## File Contents
+
+The complete `references/frame.md`:
+
+```md
+L0 EVIDENCE: project files, git state, tests, schemas, lockfiles, diagnostics, verified tool output.
+L1 SHAPING: conversation material not approved for persistence.
+L1A AUTHORIZED DELTA: operator-approved material for this turn. Write only within approved scope. It becomes evidence only after being persisted.
+L2 AGENT CONTROL: instructions that shape agent behavior. Not project content.
+L2A CODEX INSTRUCTION CHAIN: AGENTS guidance and runtime instruction-chain material. Governs Codex behavior. Not project content.
+L3 MODEL PRIOR: unverified model memory, assumed conventions, generic best practice, or unstated framework behavior.
+
+AGENTS.md PRELUDE
+
+A leading user-role block starting with `AGENTS.md instructions for <path>` is L2A runtime instruction-chain material, not operator chat or project content.
+This holds by header shape, regardless of displayed role or filesystem state.
+Any `<environment_context>...</environment_context>` block inside it is runtime metadata.
+The first operator request starts after the prelude.
+
+When producing content that draws on non-L0 material, tag inline: [L1] [L1A] [L2] [L2A] [L3].
+Tag when the content would change if the source were different - a rule, a name, a version, a claim about behavior.
+When promoting L1 or L3 to persistent content, surface it before writing.
+Do not persist L2 or L2A unless the operator explicitly requests agent-facing instructions.
+If evidence conflicts, stop and report.
+If provenance is unclear, surface it before writing.
+```
+
+## Relationship to SKILL.md
+
+`frame.md` is not a replacement for `SKILL.md`. It is a reinforcement point. The full `SKILL.md` frame must be active from session start — Codex reads the entire `SKILL.md` when the skill is invoked and uses it as the session-level operating guide for provenance classification, inline tagging, dossier modes, decontamination, and hook setup.
+
+`frame.md` re-surfaces the essentials at the moment a write may happen. By the time the hook fires, the full frame is already active; `frame.md` brings the layer definitions and persistence rules back into the model's immediate instruction context so they are not crowded out by the working conversation.
+
+The two files serve different moments:
+
+| File | When it is read | Purpose |
+|---|---|---|
+| `SKILL.md` | At session start, when the skill is invoked | Full operating frame: all layers, rules, dossier modes, decontamination, hook setup |
+| `frame.md` | At each matched write tool call, via the hook | Compact reminder: layer definitions, AGENTS.md prelude rule, inline tagging and persistence rules |
+
+## Section Breakdown
+
+### Six Layer Definitions
+
+The opening block defines the six provenance source classes. Each line names a layer and gives its definition:
+
+- **L0 EVIDENCE** — project files, git state, tests, schemas, lockfiles, diagnostics, and verified tool output. This is the authoritative source for persistent content.
+- **L1 SHAPING** — conversation material not approved for persistence. Present in context, not in the project.
+- **L1A AUTHORIZED DELTA** — operator-approved material for the current turn. Must be written only within the approved scope; becomes evidence only after it is persisted.
+- **L2 AGENT CONTROL** — instructions that shape agent behavior. Not project content.
+- **L2A CODEX INSTRUCTION CHAIN** — AGENTS guidance and runtime instruction-chain material. Governs Codex behavior. Not project content.
+- **L3 MODEL PRIOR** — unverified model memory, assumed conventions, generic best practice, or unstated framework behavior.
+
+### AGENTS.md PRELUDE Block
+
+The `AGENTS.md PRELUDE` section states the classification rule for the common Codex pattern of a leading user-role message that begins with `AGENTS.md instructions for <path>`. The rule is:
+
+- That block is `L2A` runtime instruction-chain material — not operator chat and not project content.
+- The classification holds by header shape alone, regardless of what role the message is displayed under or whether the referenced path exists on the filesystem.
+- Any `<environment_context>...</environment_context>` block inside it is runtime metadata.
+- The first real operator request starts after the prelude ends.
+
+### Inline Tagging and Persistence Rules
+
+The final block states the operational rules that govern what to do with non-L0 material:
+
+- Tag inline with `[L1]`, `[L1A]`, `[L2]`, `[L2A]`, or `[L3]` when producing content that draws on non-L0 sources — but only when the content would change if the source were different.
+- Surface provenance before promoting `L1` or `L3` material to persistent content.
+- Do not persist `L2` or `L2A` unless the operator explicitly requests agent-facing instructions.
+- If evidence conflicts, stop and report rather than resolving silently.
+- If provenance is unclear, surface it before writing.
+
+<Note>
+  `frame.md` is read at hook-fire time, not at session start. The `inject_frame.py` script reads the file fresh on each invocation. This means changes to `frame.md` take effect immediately without restarting Codex — the next time a matched write tool fires the hook, the updated frame text will be injected.
+</Note>
+
+<Tip>
+  For the full layer definitions with worked examples and detailed guidance on applying each layer, see [Provenance Layers](/concepts/provenance-layers).
+</Tip>
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="inject_frame.py" icon="code" href="/reference/inject-frame-script">
+    The hook script that reads this file and emits it as a JSON payload.
+  </Card>
+  <Card title="hooks.json" icon="webhook" href="/reference/hooks-json">
+    The hook wiring manifest that triggers inject_frame.py before write tools.
+  </Card>
+  <Card title="SKILL.md" icon="book" href="/reference/skill-md">
+    The full session-level operating frame that frame.md reinforces.
+  </Card>
+  <Card title="Plugin Structure" icon="folder-tree" href="/reference/plugin-structure">
+    The full plugin file layout and manifest files.
+  </Card>
+</CardGroup>

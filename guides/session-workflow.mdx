@@ -1,0 +1,157 @@
+---
+title: "End-to-End Session Workflow with Canon Boundary Guard"
+sidebarTitle: "Session Workflow"
+description: "A practical end-to-end workflow for running a full Codex session with Canon Boundary Guard active — from activation through analysis, editing, and write decisions."
+---
+
+This guide walks through a complete Codex session from start to finish, showing how Canon Boundary Guard shapes each stage. The frame changes how Codex reads, reasons, classifies sources, handles conflicts, and decides what can be written — not only what ends up in files, but how decisions are made along the way.
+
+## Session Lifecycle
+
+<Steps>
+  <Step title="Activate the frame">
+    In a new thread, invoke Canon Boundary Guard before any other work:
+
+    ```txt
+    Use Canon Boundary Guard for this session.
+    ```
+
+    Codex reads the full `SKILL.md` silently and adopts the operating frame without confirmation. The frame is active from this point forward.
+  </Step>
+
+  <Step title="Scan the conversation prefix">
+    Immediately after activation, Codex scans the visible conversation for a leading AGENTS.md prelude — a user-role message beginning with:
+
+    ```txt
+    AGENTS.md instructions for <path>
+    ```
+
+    If such a block is present, Codex classifies the entire message as `L2A CODEX INSTRUCTION CHAIN` material: runtime instruction-chain guidance, not operator chat and not project content. Any `<environment_context>...</environment_context>` block inside it is classified as runtime metadata.
+
+    The first real operator request is the first user message after this prelude. Earlier messages in the prelude are not counted as operator requests.
+  </Step>
+
+  <Step title="Read and analyze">
+    As Codex reads project files, inspects git state, examines schemas, lockfiles, or processes tool output, it classifies each source by layer:
+
+    - **L0 EVIDENCE** — project files, git state, tests, schemas, lockfiles, diagnostics, verified tool output
+    - **L1 SHAPING** — conversation context not approved for persistence
+    - **L3 MODEL PRIOR** — unverified model memory, assumed conventions, generic best practice
+
+    Analysis keeps these sources separated. A claim drawn from conversation context is treated differently from a claim grounded in a project file. When content would change if the source were different, Codex tags inline: `[L1]`, `[L3]`, and so on.
+  </Step>
+
+  <Step title="Plan the edit">
+    Before writing, determine which dossier mode applies:
+
+    | Mode | Condition | Required action |
+    |------|-----------|----------------|
+    | **Mode A** | Mechanical edit with clear L0 provenance | No dossier required |
+    | **Mode B** | Semantic reorganization of existing L0 evidence | Compact dossier |
+    | **Mode C** | Promotion of L1 or L3 material into persistent content | Full dossier — stop before writing |
+
+    Mode C requires completing the full dossier and receiving explicit operator approval before any write proceeds. Do not write Mode C content on the assumption that the operator intends it.
+
+    Full dossier format:
+
+    ```txt
+    Target:
+    Mode:
+    Evidence:
+    Authorized delta:
+    Rejected shaping:
+    Rejected model prior:
+    Conflicts:
+    Decision needed:
+    ```
+
+    Write `none` for any field that is empty. Do not invent rejected items.
+  </Step>
+
+  <Step title="Surface conflicts">
+    If evidence from different layers conflicts — for example, a conversation instruction describes one behavior while a project file describes another — stop and report the conflict before proceeding.
+
+    Codex does not resolve conflicts by recency, confidence, or intuition. The operator decides which source governs. Surface the conflict clearly, with the layer classification of each competing source, and wait for a decision.
+  </Step>
+
+  <Step title="Apply decontamination">
+    Before finalizing any output for persistence, scan for the four residue categories:
+
+    - **Conversation residue** — phrases that reference the current chat ("as discussed", "as said before", "come detto prima")
+    - **Agent-control residue** — instructions that were meant for the agent, not project content ("remember to", "I should", "ricordati", "devo")
+    - **Version ghosts** — version references not confirmed in L0 sources
+    - **Model-prior claims** — ungrounded best-practice language ("best practice", "standard approach", "normally", "usually")
+
+    Flag any found patterns and resolve them before writing. See [Decontamination](/guides/decontamination) for the full residue checklist and examples.
+  </Step>
+
+  <Step title="Write">
+    For **Mode A and Mode B**: verify provenance is clear and no residue patterns remain, then proceed with the write.
+
+    For **Mode C**: complete the full dossier, confirm the operator has explicitly approved the delta, and confirm decontamination is done. Then write only within the approved scope.
+
+    Do not write L1, L2, L2A, or L3 material into project files without explicit operator approval. L1A can be written only within the scope the operator approved for the current turn.
+  </Step>
+
+  <Step title="After compaction">
+    If Codex compresses context during a long session — collapsing earlier conversation history into a summary — the full `SKILL.md` content may no longer be present in the active context window. Re-invoke the skill to re-establish the frame:
+
+    ```txt
+    Use Canon Boundary Guard for this session.
+    ```
+
+    This triggers the full activation sequence again: `SKILL.md` is re-read, the frame is re-adopted, and the operating layer is restored for the remainder of the session.
+  </Step>
+</Steps>
+
+## When to Stop
+
+<Warning>
+  Always stop before writing if any of the following are true:
+
+  - Provenance is unclear — you cannot identify a clean L0 source for the content
+  - Evidence from different layers conflicts and the operator has not resolved the conflict
+  - The planned output contains unverified L3 material that would become project content without explicit operator approval
+  - Mode C conditions apply and no full dossier has been completed
+
+  Stopping and surfacing the issue is the correct action. Do not proceed on assumption.
+</Warning>
+
+## Quick Reference
+
+```txt
+INVOCATION
+  Use Canon Boundary Guard for this session.
+  Use $canon-boundary-guard for this session.
+
+LAYERS
+  L0  — project files, git state, tests, schemas, lockfiles, diagnostics, verified tool output
+  L1  — conversation material not approved for persistence
+  L1A — operator-approved material for this turn (write only within approved scope)
+  L2  — agent-control instructions (not project content)
+  L2A — AGENTS.md and runtime instruction-chain material (not project content)
+  L3  — model prior, unverified assumptions, generic best practice
+
+DOSSIER MODES
+  A — mechanical L0 edit, no dossier
+  B — semantic reorganization, compact dossier
+  C — L1/L3 promotion, full dossier, stop before writing
+
+DECONTAMINATION FLAGS
+  Conversation residue    — "as discussed", "as said before", "come detto prima"
+  Agent-control residue   — "remember to", "I should", "ricordati", "devo"
+  Version ghosts          — version refs not in L0
+  Model-prior claims      — "best practice", "standard approach", "normally", "usually"
+
+RULES
+  L0 — preserve or reorganize
+  L1A — write only within approved scope
+  L1, L2, L2A, L3 — do not persist without explicit operator approval
+  Conflicts — stop and report, do not resolve by recency or intuition
+  Unclear provenance — surface before writing
+  After compaction — re-invoke to restore the frame
+```
+
+<Tip>
+  For layer definitions and the full classification model, see [Provenance Layers](/concepts/provenance-layers). For the complete residue checklist with before/after examples, see [Decontamination](/guides/decontamination).
+</Tip>

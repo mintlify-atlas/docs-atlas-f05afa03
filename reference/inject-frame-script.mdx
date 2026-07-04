@@ -1,0 +1,120 @@
+---
+title: "inject_frame.py — Hook Payload Script"
+sidebarTitle: "inject_frame.py"
+description: "inject_frame.py reads the compact frame.md and emits a JSON payload for the Codex PreToolUse hook, surfacing the provenance classification frame before every matched write tool."
+---
+
+`inject_frame.py` is intentionally small. It reads `references/frame.md`, strips surrounding whitespace, and emits a JSON hook payload on stdout. Codex invokes it as an external subprocess through the `PreToolUse` hook configured in `hooks.json` — once before each matched write tool call (`apply_patch`, `Write`, or `Edit`). The script does not modify files, does not communicate with any external service, and does not block the tool call. Its sole purpose is to put the compact provenance classification frame back into the model's instruction stream at the moment a write operation is about to happen.
+
+## Source
+
+```python
+#!/usr/bin/env python3
+import json
+import pathlib
+import sys
+
+skill_dir = pathlib.Path(__file__).resolve().parents[1]
+frame_path = skill_dir / "references" / "frame.md"
+
+sys.stdin.read()
+
+try:
+    frame_text = frame_path.read_text(encoding="utf-8")
+except FileNotFoundError:
+    frame_text = "Canon Boundary Guard frame missing: provenance protection degraded."
+
+output = {
+    "hookSpecificOutput": {
+        "hookEventName": "PreToolUse",
+        "additionalContext": frame_text.strip()
+    },
+    "systemMessage": frame_text.strip()
+}
+
+print(json.dumps(output))
+```
+
+## Output JSON Structure
+
+When `frame.md` is found and readable, the script prints a single JSON object to stdout:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "additionalContext": "<contents of frame.md>"
+  },
+  "systemMessage": "<contents of frame.md>"
+}
+```
+
+### Output Fields
+
+<ParamField body="hookSpecificOutput.additionalContext" type="string">
+  The model-visible context path for `PreToolUse` hooks. This is how the compact provenance frame reaches the model's instruction stream — Codex reads this field and includes its contents as additional context before the tool call executes. The value is the full text of `frame.md` with surrounding whitespace stripped.
+</ParamField>
+
+<ParamField body="hookSpecificOutput.hookEventName" type="string">
+  Identifies the hook event type this payload is responding to. Always `"PreToolUse"` for this script.
+</ParamField>
+
+<ParamField body="systemMessage" type="string">
+  Surfaces the hook activity in the Codex UI or event stream. It carries the same frame text as `additionalContext`, making the hook's activity visible outside the model's instruction stream — in the UI status area, event log, or hook review view. This field does not affect what the model sees; it is for observability.
+</ParamField>
+
+## Fallback Behavior
+
+If `references/frame.md` is not found at the resolved path, the script catches the `FileNotFoundError` and substitutes a degraded message:
+
+```txt
+Canon Boundary Guard frame missing: provenance protection degraded.
+```
+
+This string becomes the value of both `additionalContext` and `systemMessage`. The failure is visible — the Codex UI will display the degraded message through `systemMessage`, and the model will receive it through `additionalContext` — but it does not block the tool call or crash the hook. The deliberate design principle is: the skill should not make normal work impossible because a local file is missing, but it should not fail silently either.
+
+## Path Resolution
+
+The script resolves `frame_path` relative to its own location using:
+
+```python
+skill_dir = pathlib.Path(__file__).resolve().parents[1]
+frame_path = skill_dir / "references" / "frame.md"
+```
+
+`pathlib.Path(__file__).resolve()` gives the absolute path of `inject_frame.py` itself. `.parents[1]` steps up two directory levels — from `scripts/` to the `canon-boundary-guard/` skill root. From there, `references/frame.md` is always at a known relative position. This approach means the script finds `frame.md` correctly regardless of the working directory from which Codex launches the hook subprocess.
+
+The resolved directory structure is:
+
+```txt
+canon-boundary-guard/          ← skill_dir (parents[1])
+├── references/
+│   └── frame.md               ← frame_path
+└── scripts/
+    └── inject_frame.py        ← __file__
+```
+
+<Note>
+  The script calls `sys.stdin.read()` and discards the result before attempting to read `frame.md`. Codex `PreToolUse` hooks receive the tool's input arguments on stdin as JSON. The script does not use that data — its only job is to emit the frame — but it must consume stdin before exiting. Leaving stdin unread can cause a broken pipe or hang depending on the platform and Python version.
+</Note>
+
+<Warning>
+  If the target system requires `python3` rather than `python`, update the `command` field in `hooks.json` to use `python3`. The shebang line in the script (`#!/usr/bin/env python3`) is for direct execution; when invoked through the hook's `command` field, the binary name in that field determines which interpreter is used.
+</Warning>
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="hooks.json" icon="webhook" href="/reference/hooks-json">
+    The hook wiring manifest that invokes this script before matched write tools.
+  </Card>
+  <Card title="frame.md" icon="frame" href="/reference/frame-md">
+    The compact classification frame that this script reads and emits.
+  </Card>
+  <Card title="Plugin Structure" icon="folder-tree" href="/reference/plugin-structure">
+    The full plugin file layout showing where inject_frame.py lives.
+  </Card>
+  <Card title="SKILL.md" icon="book" href="/reference/skill-md">
+    The full session-level operating frame that the hook reinforces.
+  </Card>
+</CardGroup>

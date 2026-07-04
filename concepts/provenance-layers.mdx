@@ -1,0 +1,85 @@
+---
+title: "Provenance Layers: L0 through L3 Explained"
+sidebarTitle: "Provenance Layers"
+description: "Canon Boundary Guard classifies all session material into six source layers — from verified project evidence at L0 to unverified model priors at L3 — to keep persistence decisions safe."
+---
+
+Not all sources that Codex touches during a session carry the same authority. A project file is not the same thing as a temporary chat message. An instruction for Codex is not the same thing as content that belongs in the repository. A model assumption is not the same thing as verified evidence. Canon Boundary Guard formalizes this reality through a six-layer classification frame that describes where each piece of material came from and whether it can safely become persistent project content.
+
+## The Six Layers
+
+### L0 EVIDENCE
+
+**Definition:** Persistent or verified evidence — project files, git state, tests, schemas, lockfiles, diagnostics, command output, or verified external source or tool output from the current task.
+
+**Examples:** Source files on disk, lockfiles, test results, git log output, schema definitions, diagnostic tool output, verified command output run during the current task.
+
+**Persistence rule:** L0 material is the foundation. It can be preserved and reorganized freely. Codex should never silently overwrite or discard it without a clear operator intent.
+
+---
+
+### L1 SHAPING
+
+**Definition:** Conversation material not explicitly approved as a durable project decision. Present in context, but not in the project.
+
+**Examples:** Suggestions made in chat, requirements discussed but not committed to files, hypotheses raised during a conversation, unconfirmed design proposals.
+
+**Persistence rule:** L1 does not persist. It can shape how Codex reasons but must not be written to project files without explicit operator approval.
+
+---
+
+### L1A AUTHORIZED DELTA
+
+**Definition:** Conversation material the operator has explicitly approved for persistence in the current turn. It becomes evidence only after it is written to a persistent artifact.
+
+**Examples:** A new function the operator has reviewed and approved in a response, a configuration value the operator has confirmed should be added, a document section the operator has greenlit for the current write operation.
+
+**Persistence rule:** L1A can be written — but only within the scope explicitly approved by the operator for the current turn. Approval does not carry forward to subsequent turns automatically.
+
+---
+
+### L2 AGENT CONTROL
+
+**Definition:** Instructions, steering, reminders, or constraints given to the agent to shape its behavior. Not project content.
+
+**Examples:** System prompts, inline behavioral reminders, agent-scoped rules that tell Codex how to act rather than what to produce in the project.
+
+**Persistence rule:** L2 does not persist unless the operator explicitly requests that agent-facing operating instructions be written as a project artifact.
+
+---
+
+### L2A CODEX INSTRUCTION CHAIN
+
+**Definition:** AGENTS guidance loaded by Codex from the instruction chain — agent-control authority that governs Codex behavior at its scope. Not project content.
+
+**Examples:** Instructions delivered via `AGENTS.md` or `AGENTS.override.md` from the Codex home directory or the current repository path, a leading session prelude block beginning with `AGENTS.md instructions for <path>`.
+
+**Persistence rule:** L2A governs Codex behavior and does not persist into project content unless the operator explicitly requests it. See [AGENTS.md Authority](/concepts/agents-md-authority) for prelude classification details.
+
+---
+
+### L3 MODEL PRIOR
+
+**Definition:** Unverified model memory, generic best practice, assumed framework behavior, a version claim, or an unstated convention not grounded in local evidence.
+
+**Examples:** Statements like "this is the standard approach," assumed library APIs not confirmed by project files, version numbers not found in any lockfile or configuration, general "best practice" claims without L0 grounding.
+
+**Persistence rule:** L3 does not persist unless it is verified against L0 evidence or the operator explicitly approves it, at which point it transitions to L1A.
+
+---
+
+<Note>
+  **The persistence boundary:** L0 and L1A are the only layers that can safely become repository content. L1A can be written only within the scope approved by the operator for the current turn — that approval does not automatically extend to future turns or to content outside the explicitly approved change. Every other layer (L1, L2, L2A, L3) can inform Codex reasoning without ever becoming a file in the repository.
+</Note>
+
+## Layer Interactions
+
+Layers do not decide whether something is true. They describe provenance — where material came from and what authority it carries. A highly confident L3 model prior is still L3. A brief chat message is still L1 even if it agrees with a project file.
+
+Non-L0 material can legitimately shape how Codex interprets a task, what questions it asks, and how it structures its reasoning. What it must not do is silently become repository content. The transition from any non-L0 layer to persistent content requires an explicit operator action — either direct approval (producing L1A) or a verified match against L0 evidence.
+
+When material from multiple layers touches the same subject, the layers do not automatically resolve into a single answer. Layer conflicts are surfaced, not silently adjudicated. The operator decides.
+
+<Warning>
+  If evidence conflicts across layers — for example, a project file (L0) says one thing while the current conversation (L1) or a model assumption (L3) says another — **stop and report the conflict**. Do not resolve it by recency, confidence, or intuition. Layer conflicts are decisions for the operator, not inferences for the model.
+</Warning>
